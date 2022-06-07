@@ -61,22 +61,30 @@ const store = configureStore({
 const selectAddress = state => state.address;
 const selectRuns = state => state.runs;
 
-async function augmentRun(run) {
-    const runId = run.runId;
+async function fetchRunData(runId) {
     const { runDB, gameContract } = store.getState();
     if (runDB[runId]) {
-        const runData = runDB[runId];
-        return Object.assign({}, run, { runData });
+        return runDB[runId];
     } else if (gameContract) {
-        const runData = await gameContract.runsById(run.runId).then(r => {
+        return gameContract.runsById(runId).then(r => {
             return {
                 notorietyPoints: r.notorietyPoints?.toNumber(),
                 data: parseInt(ethers.utils.formatUnits(r.data, 18)),
                 startTime: r.startTime?.toNumber(),
                 endTime: r.endTime?.toNumber(),
             };
+        }).then(runData => {
+            store.dispatch(storeRunData({ runId, runData }));
+            return runData;
         });
-        store.dispatch(storeRunData({ runId, runData }));
+    }
+}
+
+async function augmentRun(run) {
+    const runId = run.runId;
+
+    const runData = await fetchRunData(runId);
+    if (runData) {
         return Object.assign({}, run, { runData });
     } else {
         return run;
