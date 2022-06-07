@@ -17,6 +17,7 @@ const slice = createSlice({
         gameContract: null,
         runs: [],
         runDB: {},
+        runnerDB: {},
     },
     reducers: {
         connected: (state, action) => {
@@ -34,12 +35,15 @@ const slice = createSlice({
         storeRunData: (state, action) => {
             state.runDB[action.payload.runId] = action.payload.runData;
         },
+        storeRunnerData: (state, action) => {
+            state.runnerDB[action.payload.runnerId] = action.payload.runner;
+        },
     },
 });
 
 const {
     connected, connectFinished,
-    gotRuns, storeRunData,
+    gotRuns, storeRunData, storeRunnerData,
 } = slice.actions;
 const store = configureStore({
     reducer: slice.reducer,
@@ -80,15 +84,32 @@ async function fetchRunData(runId) {
     }
 }
 
+async function fetchRunnerData(runnerId) {
+    const { runnerDB } = store.getState();
+    if (runnerDB[runnerId]) {
+        return runnerDB[runnerId];
+    } else {
+        return fetch(`https://2112-api.sirsean.workers.dev/runner/${runnerId}`)
+            .then(r => r.json())
+            .then(runner => {
+                store.dispatch(storeRunnerData({ runnerId, runner }));
+                return runner;
+            })
+            .catch(e => {
+                // ephemeral CORS errors?
+                return null;
+            });
+    }
+}
+
 async function augmentRun(run) {
     const runId = run.runId;
 
-    const runData = await fetchRunData(runId);
-    if (runData) {
-        return Object.assign({}, run, { runData });
-    } else {
-        return run;
-    }
+    const [ runData, runner ] = await Promise.all([
+        fetchRunData(runId),
+        fetchRunnerData(run.tokenId.toNumber()),
+    ]);
+    return Object.assign({}, run, { runData }, { runner });
 }
 
 async function fetchRuns() {
@@ -156,10 +177,16 @@ function RunRow({ run }) {
         <div className="RunRow">
             <div className="row">
                 <div className="col">
-                    <a href={runnerHref} target="_blank" rel="noreferrer">{runnerId}</a>
+                    <div className="imgWrapper">
+                        {run?.runner?.image &&
+                            <a href={runnerHref} target="_blank" rel="noreferrer">
+                                <img className="runner" src={run.runner.image} alt={runnerId} />
+                            </a>}
+                        <span className="runner-id">{runnerId}</span>
+                    </div>
                 </div>
-                <div className="col">{run.runData.notorietyPoints}</div>
-                <div className="col">{run.runData.data}</div>
+                <div className="col np">{run.runData.notorietyPoints}</div>
+                <div className="col data">{run.runData.data}</div>
                 <div className="col">{(new Date(run.runData.endTime * 1000)).toLocaleString()}</div>
                 <div className="col run-link"><a href={runHref} target="_blank" rel="noreferrer">View Run</a></div>
             </div>
