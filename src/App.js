@@ -97,6 +97,7 @@ async function fetchRuns() {
             return gameContract.queryFilter(gameContract.filters.RunEnded(), block.number - 10000, block.number);
         })
             .then(all => all.map(e => e.args))
+            .then(runs => runs.slice().reverse().splice(0, 20))
             .then(runs => Promise.all(runs.map(augmentRun)))
             .then(runs => runs.sort(sortBy('-runData.endTime')))
             .then(runs => {
