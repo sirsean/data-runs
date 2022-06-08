@@ -17,6 +17,7 @@ const slice = createSlice({
         gameContract: null,
         runs: [],
         runDB: {},
+        updatedAt: null,
     },
     reducers: {
         connected: (state, action) => {
@@ -30,6 +31,7 @@ const slice = createSlice({
         },
         gotRuns: (state, action) => {
             state.runs = action.payload.runs;
+            state.updatedAt = new Date();
         },
         storeRunData: (state, action) => {
             state.runDB[action.payload.runId] = action.payload.runData;
@@ -60,6 +62,7 @@ const store = configureStore({
 
 const selectAddress = state => state.address;
 const selectRuns = state => state.runs;
+const selectUpdatedAt = state => state.updatedAt;
 
 async function fetchRunData(runId) {
     const { runDB, gameContract } = store.getState();
@@ -195,11 +198,13 @@ function Main() {
 
 function Header() {
     const address = useSelector(selectAddress);
+    const updatedAt = useSelector(selectUpdatedAt);
     return (
         <header>
             <div className="left"><h1>data-runs</h1></div>
             <div className="right">
                 <span>{address}</span>
+                {updatedAt && <span>Last Update: {updatedAt.toLocaleString()}</span>}
             </div>
         </header>
     );
