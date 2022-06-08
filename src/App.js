@@ -17,7 +17,6 @@ const slice = createSlice({
         gameContract: null,
         runs: [],
         runDB: {},
-        runnerDB: {},
     },
     reducers: {
         connected: (state, action) => {
@@ -35,15 +34,12 @@ const slice = createSlice({
         storeRunData: (state, action) => {
             state.runDB[action.payload.runId] = action.payload.runData;
         },
-        storeRunnerData: (state, action) => {
-            state.runnerDB[action.payload.runnerId] = action.payload.runner;
-        },
     },
 });
 
 const {
     connected, connectFinished,
-    gotRuns, storeRunData, storeRunnerData,
+    gotRuns, storeRunData,
 } = slice.actions;
 const store = configureStore({
     reducer: slice.reducer,
@@ -84,32 +80,13 @@ async function fetchRunData(runId) {
     }
 }
 
-async function fetchRunnerData(runnerId) {
-    const { runnerDB } = store.getState();
-    if (runnerDB[runnerId]) {
-        return runnerDB[runnerId];
-    } else {
-        return fetch(`https://2112-api.sirsean.workers.dev/runner/${runnerId}`)
-            .then(r => r.json())
-            .then(runner => {
-                store.dispatch(storeRunnerData({ runnerId, runner }));
-                return runner;
-            })
-            .catch(e => {
-                // ephemeral CORS errors?
-                return null;
-            });
-    }
-}
-
 async function augmentRun(run) {
     const runId = run.runId;
 
-    const [ runData, runner ] = await Promise.all([
+    const [ runData ] = await Promise.all([
         fetchRunData(runId),
-        fetchRunnerData(run.tokenId.toNumber()),
     ]);
-    return Object.assign({}, run, { runData }, { runner });
+    return Object.assign({}, run, { runData });
 }
 
 async function fetchRuns() {
@@ -171,6 +148,7 @@ function RunTitle() {
 
 function RunRow({ run }) {
     const runnerId = run.tokenId.toNumber();
+    const runnerImg = `https://2112-api.sirsean.workers.dev/runner/${runnerId}.png`;
     const runnerHref = `https://runner-hunter.sirsean.workers.dev/${runnerId}`;
     const runHref = `https://runner-hunter.sirsean.workers.dev/run/${run.runId}`;
     return (
@@ -178,10 +156,9 @@ function RunRow({ run }) {
             <div className="row">
                 <div className="col">
                     <div className="imgWrapper">
-                        {run?.runner?.image &&
-                            <a href={runnerHref} target="_blank" rel="noreferrer">
-                                <img className="runner" src={run.runner.image} alt={runnerId} />
-                            </a>}
+                        <a href={runnerHref} target="_blank" rel="noreferrer">
+                            <img className="runner" src={runnerImg} alt={runnerId} />
+                        </a>
                         <span className="runner-id">{runnerId}</span>
                     </div>
                 </div>

@@ -61,9 +61,13 @@ h2 {
     width: 100%;
 }
 
+.RunList .RunRow:nth-child(odd) {
+    background-color: var(--black2);
+}
+
 .RunRow {
     width: 100%;
-    padding: 3px 0;
+    padding: 5px;
 }
 
 .RunRow .col {
