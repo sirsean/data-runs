@@ -31,7 +31,7 @@ const slice = createSlice({
         },
         gotRuns: (state, action) => {
             state.runs = action.payload.runs;
-            state.updatedAt = new Date();
+            state.updatedAt = (new Date()).getTime();
         },
         storeRunData: (state, action) => {
             state.runDB[action.payload.runId] = action.payload.runData;
@@ -62,7 +62,7 @@ const store = configureStore({
 
 const selectAddress = state => state.address;
 const selectRuns = state => state.runs;
-const selectUpdatedAt = state => state.updatedAt;
+const selectUpdatedAt = state => new Date(state.updatedAt);
 
 async function fetchRunData(runId) {
     const { runDB, gameContract } = store.getState();
@@ -97,7 +97,7 @@ async function fetchRuns() {
     if (gameContract) {
         return gameContract.provider.getBlock().then(block => {
             // max 10k blocks per request
-            return gameContract.queryFilter(gameContract.filters.RunEnded(), block.number - 10000, block.number);
+            return gameContract.queryFilter(gameContract.filters.RunEnded(), block.number - 1000, block.number);
         })
             .then(all => all.map(e => e.args))
             .then(runs => runs.slice().reverse().splice(0, 20))
